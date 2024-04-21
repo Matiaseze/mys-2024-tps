@@ -205,7 +205,9 @@ varianza_1000 = np.var(exponencial_1000_beta3) # varianza 1000 numeros aleatorio
 
 varianza_10000 = np.var(exponencial_10000_beta3) # varianza 10000 numeros aleatorios
 
-print("La media es:", media_100,"\n", media_1000,"\n", media_10000)
+print("La media es:","\n"," Con 100:", media_100,"\n"," Con 1000:", media_1000,"\n"," Con 10000:", media_10000)
+print("El desvio estandar es:","\n"," Con 100:", desvio_100,"\n"," Con 1000:", desvio_1000,"\n"," Con 10000:", desvio_10000)
+print("La varianza es:","\n"," Con 100:", varianza_100,"\n"," Con 1000:", varianza_1000,"\n"," Con 10000:", varianza_10000)
 
 
 """
@@ -230,18 +232,20 @@ Donde μ es la media poblacional
 n_de_100 = len(exponencial_100_beta3)
 n_de_1000 = len(exponencial_1000_beta3)
 n_de_10000 = len(exponencial_10000_beta3)
+# Nota: utilice el tamaño de las muestras generadas con distribucion exponencial del punto anterior.
+
 z = 2.58 # Valor obtenido de la tabla Z para un nivel de confianza del 99%
-    
-def calcular_intervalo_confianza(media_muestral, desvio_estandar, z, n):
-    margen_error = z * (desvio_estandar / np.sqrt(n))
-    extremo_inferior = media_muestral - margen_error
-    extremo_superior = media_muestral + margen_error
+mult_desvio = 2
+def calcular_intervalo_confianza(media_muestral, mult_desvio, desvio_estandar, z, n):
+    error_estandar = z * ( (mult_desvio * desvio_estandar) / np.sqrt(n))
+    extremo_inferior = media_muestral - error_estandar
+    extremo_superior = media_muestral + error_estandar
     
     return extremo_inferior, extremo_superior
 
-intervalo_100 = calcular_intervalo_confianza(media_100, desvio_100, n_de_100)
-intervalo_1000 = calcular_intervalo_confianza(media_1000, desvio_1000, n_de_1000)
-intervalo_10000 = calcular_intervalo_confianza(media_10000, desvio_10000, n_de_10000)
+intervalo_100 = calcular_intervalo_confianza(media_100, mult_desvio, desvio_100, z, n_de_100)
+intervalo_1000 = calcular_intervalo_confianza(media_1000, mult_desvio, desvio_1000, z, n_de_1000)
+intervalo_10000 = calcular_intervalo_confianza(media_10000, mult_desvio, desvio_10000, z, n_de_10000)
 
 print("Intervalo de confianza estimado para :", intervalo_100)
 print("Intervalo de confianza estimado para :", intervalo_1000)

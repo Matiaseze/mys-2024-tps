@@ -1,4 +1,4 @@
-muestra <- sample(seq(0, 1, by = 0.01), 100, replace = TRUE)
+muestra <- sample(seq(0, 1, by = 0.01), 100, replace = TRUE) # 100 numeros aleatorios
 
 media <- mean(muestra) # Media
 
