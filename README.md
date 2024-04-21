@@ -1,2 +1,7 @@
-# mys-2024-tps
-mys-2024-tps
+# Modelos y Simulación
+
+## Repositorio de trabajos practicos: 
+
+### Alumno: Barea Matias
+
+### Profesores: Lic. Claudia López de Munain - Lic. Bruno Alfredo Pazos
