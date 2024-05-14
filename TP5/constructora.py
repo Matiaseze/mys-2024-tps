@@ -2,47 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-num_experimentos = 30
-num_corridas = 100
-
-tiempos_experimentos = []
-criticidad_accesos_experimentos = []
-
-
-"""
-Referencia  Tarea                                   Demora
-A           Preparar terreno (rellenar/nivelar)     U(2, 4)
-B           Construir bases                         U(3, 5)
-C           Preparar cañería de cloacas             U(1, 2)
-D           Levantar paredes                        U(4, 8)
-E           Construir techo (madera + chapas)       U(3, 6)
-F           Realizar la instalación eléctrica       U(2, 5)
-G           Realizar la instalación de gas          U(2, 4)
-H           Colocar aberturas                       U(1, 3)
-I           Colocar pisos                           U(2, 4) 
-J           Pintar la casa (interior/exterior)      U(2, 3)
-
-"""
-
-tareas = {
-    'A' : {'nombre' : "Preparar terreno", 'demora_min': 2, 'demora_max': 4},
-    'B' : {'nombre' : "Construir bases", 'demora_min': 3, 'demora_max': 5},
-    'C' : {'nombre' : "Preparar cañería de cloacas", 'demora_min': 1, 'demora_max': 2},
-    'D' : {'nombre' : "Levantar paredes", 'demora_min': 4, 'demora_max': 8},
-    'E' : {'nombre' : "Construir techo", 'demora_min': 3, 'demora_max': 6},
-    'F' : {'nombre' : "Realizar la instalación eléctrica", 'demora_min': 2, 'demora_max': 5},
-    'G' : {'nombre' : "Realizar la instalación de gas", 'demora_min': 2, 'demora_max': 4},
-    'H' : {'nombre' : "Colocar aberturas", 'demora_min': 1, 'demora_max': 3},
-    'I' : {'nombre' : "Colocar pisos", 'demora_min': 2, 'demora_max': 4},
-    'J' : {'nombre' : "Pintar la casa", 'demora_min': 2, 'demora_max': 3}
-}
-
 def generar_tiempo(min, max, size):
     return np.random.uniform(min, max, size)
 
 def realizar_tarea(ref):
-    tarea = tarea[ref]
-    tiempo = generar_tiempo(tarea['demora_min'][0], tarea['demora_max'][1], 1)
+    tarea = tareas[ref]
+    tiempo = generar_tiempo(tarea['demora_min'], tarea['demora_max'], 1)
     return tiempo
 
 def simular_tareas():
@@ -76,12 +41,12 @@ Simular el experimento segun la cantidad de corridas de la simulacion de tareas.
 
 """
 def simular_experimento(num_corridas):
-    tiempos_experimento = []
+    tiempos_corridas = []
     criticidad_accesos = {'inicial': 0, 'superior': 0, 'medio': 0, 'inferior': 0}
 
     for i in range(num_corridas):
         tiempo_total, tareas_iniciales, acceso_superior, acceso_medio, acceso_inferior = simular_tareas()
-        tiempos_experimento.append(tiempo_total)
+        tiempos_corridas.append(tiempo_total)
         if tiempo_total == tareas_iniciales:
             criticidad_accesos['inicial'] += 1
         if tiempo_total == acceso_superior:
@@ -91,7 +56,7 @@ def simular_experimento(num_corridas):
         if tiempo_total == acceso_inferior:
             criticidad_accesos['inferior'] += 1
 
-    return tiempos_experimento, criticidad_accesos
+    return tiempos_corridas, criticidad_accesos
 
 def calcular_intervalo_confianza(media_muestral, mult_desvio, desvio_estandar, z, n):
     error_estandar = z * ( (mult_desvio * desvio_estandar) / np.sqrt(n))
@@ -101,12 +66,16 @@ def calcular_intervalo_confianza(media_muestral, mult_desvio, desvio_estandar, z
     return extremo_inferior, extremo_superior
 
 
-def simular_proyecto(num_experimentos):
+def simular_proyecto(num_experimentos, num_corridas):
 
     for i in range(num_experimentos):
-        tiempos_experimento, criticidad_accesos = simular_experimento(num_corridas)
-        tiempos_experimentos.append(tiempos_experimento)
+
+        tiempos_corridas, criticidad_accesos = simular_experimento(num_corridas)
+        
+        tiempos_experimentos.append(tiempos_corridas)        
         criticidad_accesos_experimentos.append(criticidad_accesos)
+        tiempo_proyecto.append(np.mean(tiempos_experimentos))
+    return tiempos_experimentos, tiempo_proyecto, criticidad_accesos_experimentos
 
 # 1. Calcular tiempo promedio de finalización del proyecto
 def calcular_tiempo_promedio(tiempos):
@@ -123,31 +92,83 @@ def calcular_ic99_exp(tiempos_experimentos):
     return ic_99_inf, ic_99_sup
 
 # 2. Calcular porcentaje de criticidad de los accesos
+def calcular_criticidad_accesos(total_corridas, criticidad_accesos_experimentos):
+    
+    criticidad_accesos_totales = {'inicial': 0, 'superior': 0, 'medio': 0, 'inferior': 0}
 
-total_corridas = num_experimentos * num_corridas
-criticidad_accesos_totales = {'inicial': 0, 'superior': 0, 'medio': 0, 'inferior': 0}
+    for criticidad_accesos in criticidad_accesos_experimentos:
+        for key, value in criticidad_accesos.items():
+            criticidad_accesos_totales[key] += value
 
-for criticidad_accesos in criticidad_accesos_experimentos:
-    for key, value in criticidad_accesos.items():
-        criticidad_accesos_totales[key] += value
+    for key, value in criticidad_accesos_totales.items():
+        print("Porcentaje de criticidad para acceso", key, ":", value / total_corridas * 100)
 
-for key, value in criticidad_accesos_totales.items():
-    print("Porcentaje de criticidad para acceso", key, ":", value / total_corridas * 100)
+# 3. Histograma de distribución del tiempo de realización del proyecto
+def graficar_histogramas(tiempo_proyecto, tiempos_experimentos):
+    plt.figure(figsize=(10, 6))
+    plt.hist(tiempo_proyecto, bins=30, alpha=0.7, color='blue', edgecolor='black')
+    plt.title('Distribución del tiempo de realización del proyecto')
+    plt.xlabel('Tiempo de finalización del proyecto')
+    plt.ylabel('Frecuencia')
+    plt.grid(True)
+    plt.show()
 
-# 3. Graficar histograma de distribución del tiempo de realización del proyecto
-plt.figure(figsize=(10, 6))
-plt.hist(tiempos_experimentos.flatten(), bins=30, alpha=0.7, color='blue', edgecolor='black')
-plt.title('Distribución del tiempo de realización del proyecto')
-plt.xlabel('Tiempo de finalización del proyecto')
-plt.ylabel('Frecuencia')
-plt.grid(True)
-plt.show()
+    # Histograma de promedios de los 3000 corridas
+    plt.figure(figsize=(10, 6))
+    plt.hist(tiempos_experimentos, bins=30, alpha=0.7, color='red', edgecolor='black')
+    plt.title('Distribución de promedios de los 30 experimentos')
+    plt.xlabel('Promedio de tiempo de finalización del proyecto')
+    plt.ylabel('Frecuencia')
+    plt.grid(True)
+    plt.show()
 
-# Graficar histograma de promedios de los 30 experimentos
-plt.figure(figsize=(10, 6))
-plt.hist(tiempo_promedio_experimentos, bins=15, alpha=0.7, color='green', edgecolor='black')
-plt.title('Distribución de promedios de los 30 experimentos')
-plt.xlabel('Promedio de tiempo de finalización del proyecto')
-plt.ylabel('Frecuencia')
-plt.grid(True)
-plt.show()
+
+
+if __name__ == '__main__':
+
+    num_experimentos = 2
+    num_corridas = 100
+
+    tiempos_experimentos = []
+    tiempo_proyecto = []
+    criticidad_accesos_experimentos = []
+
+
+    """
+    Referencia  Tarea                                   Demora
+    A           Preparar terreno (rellenar/nivelar)     U(2, 4)
+    B           Construir bases                         U(3, 5)
+    C           Preparar cañería de cloacas             U(1, 2)
+    D           Levantar paredes                        U(4, 8)
+    E           Construir techo (madera + chapas)       U(3, 6)
+    F           Realizar la instalación eléctrica       U(2, 5)
+    G           Realizar la instalación de gas          U(2, 4)
+    H           Colocar aberturas                       U(1, 3)
+    I           Colocar pisos                           U(2, 4) 
+    J           Pintar la casa (interior/exterior)      U(2, 3)
+
+    """
+
+    tareas = {
+        'A' : {'nombre' : "Preparar terreno", 'demora_min': 2, 'demora_max': 4},
+        'B' : {'nombre' : "Construir bases", 'demora_min': 3, 'demora_max': 5},
+        'C' : {'nombre' : "Preparar cañería de cloacas", 'demora_min': 1, 'demora_max': 2},
+        'D' : {'nombre' : "Levantar paredes", 'demora_min': 4, 'demora_max': 8},
+        'E' : {'nombre' : "Construir techo", 'demora_min': 3, 'demora_max': 6},
+        'F' : {'nombre' : "Realizar la instalación eléctrica", 'demora_min': 2, 'demora_max': 5},
+        'G' : {'nombre' : "Realizar la instalación de gas", 'demora_min': 2, 'demora_max': 4},
+        'H' : {'nombre' : "Colocar aberturas", 'demora_min': 1, 'demora_max': 3},
+        'I' : {'nombre' : "Colocar pisos", 'demora_min': 2, 'demora_max': 4},
+        'J' : {'nombre' : "Pintar la casa", 'demora_min': 2, 'demora_max': 3}
+    }
+
+    # 1.
+    tiempos_experimentos, tiempo_proyecto, criticidad_accesos_experimentos = simular_proyecto(num_experimentos, num_corridas)
+    ic_99_inf, ic_99_sup = calcular_ic99_exp(tiempos_experimentos)
+    # 2.
+    total_corridas = num_experimentos * num_corridas
+    calcular_criticidad_accesos(total_corridas, criticidad_accesos_experimentos)
+    # 3.
+    print(tiempos_experimentos)
+    graficar_histogramas(tiempo_proyecto, tiempos_experimentos)
+
