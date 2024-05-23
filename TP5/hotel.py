@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-num_experimentos = 30
-num_corridas = 100
+num_experimentos = 1
+num_corridas = 1
 
 tiempos_experimentos = []
 criticidad_accesos_experimentos = []
@@ -69,6 +69,7 @@ def simular_tareas():
     acceso_inferior = max(tarea_f + tarea_g)
 
     tiempo_total = max(acceso_superior, acceso_medio, acceso_inferior) #El tiempo maximo de los 3 accesos
+    print(tiempo_total)
     return tiempo_total, acceso_superior, acceso_medio, acceso_inferior
 
 """
