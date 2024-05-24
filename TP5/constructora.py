@@ -34,7 +34,7 @@ tareas = {
 }
 
 def generar_tiempo(min, max):
-    return np.random.uniform(min, max, 1)
+    return np.random.uniform(min, max)
 
 def realizar_tarea(ref):
     tarea = tareas[ref]
@@ -42,6 +42,7 @@ def realizar_tarea(ref):
     return tiempo
 
 def simular_tareas():
+    tiempo_total = []
 
     # A->B->C->
     tarea_a = realizar_tarea('A')
@@ -68,7 +69,7 @@ def simular_tareas():
 
     tarea_j = realizar_tarea('J')   
     tarea_final = tarea_j
-    tiempo_total = tareas_iniciales + max(acceso_superior + acceso_medio + acceso_inferior) + tarea_j
+    tiempo_total.append(tareas_iniciales + max(acceso_superior + acceso_medio + acceso_inferior) + tarea_j)
     return tiempo_total, tareas_iniciales, acceso_superior, acceso_medio, acceso_inferior, tarea_final
 
 """
