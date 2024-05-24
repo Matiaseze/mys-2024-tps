@@ -1,11 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-num_experimentos = 1
-num_corridas = 1
-
 tiempos_experimentos = []
+tiempo_proyecto = []
 criticidad_accesos_experimentos = []
 
 
@@ -42,12 +39,12 @@ tareas = {
     'G' : {'nombre' : "Preparar bebidas frías", 'demora_min': 3, 'demora_max': 7}
 }
 
-def generar_tiempo(min, max, size):
-    return np.random.uniform(min, max, size)
+def generar_tiempo(min, max):
+    return np.random.uniform(min, max)
 
 def realizar_tarea(ref):
-    tarea = tarea[ref]
-    tiempo = generar_tiempo(tarea['demora_min'][0], tarea['demora_max'][1], 1)
+    tarea = tareas[ref]
+    tiempo = generar_tiempo(tarea['demora_min'], tarea['demora_max'])
     return tiempo
 
 def simular_tareas():
@@ -56,20 +53,19 @@ def simular_tareas():
     tarea_a = realizar_tarea('A')
     tarea_b = realizar_tarea('B')
     tarea_c = realizar_tarea('C')
-    acceso_superior = max(tarea_a + tarea_b + tarea_c)
+    acceso_superior = tarea_a + tarea_b + tarea_c
     
     #Tiempos de tareas acceso medio
     tarea_d = realizar_tarea('D')
     tarea_e = realizar_tarea('E')
-    acceso_medio = max(tarea_d + tarea_e)
+    acceso_medio = tarea_d + tarea_e
     
     #Tiempos de tareas acceso inferior
     tarea_f = realizar_tarea('F')
     tarea_g = realizar_tarea('G')
-    acceso_inferior = max(tarea_f + tarea_g)
+    acceso_inferior = tarea_f + tarea_g
 
     tiempo_total = max(acceso_superior, acceso_medio, acceso_inferior) #El tiempo maximo de los 3 accesos
-    print(tiempo_total)
     return tiempo_total, acceso_superior, acceso_medio, acceso_inferior
 
 """
@@ -80,7 +76,7 @@ def simular_experimento(num_corridas):
     tiempos_experimento = []
     criticidad_accesos = {'superior': 0, 'medio': 0, 'inferior': 0}
 
-    for _ in range(num_corridas):
+    for i in range(num_corridas):
         tiempo_total, acceso_superior, acceso_medio, acceso_inferior = simular_tareas()
         tiempos_experimento.append(tiempo_total)
 
@@ -100,46 +96,62 @@ def calcular_intervalo_confianza(media_muestral, mult_desvio, desvio_estandar, z
     
     return extremo_inferior, extremo_superior
 
+def simular_proyecto(num_experimentos, num_corridas):
 
-for _ in range(num_experimentos):
-    tiempos_experimento, criticidad_accesos = simular_experimento(num_corridas)
-    tiempos_experimentos.append(tiempos_experimento)
-    criticidad_accesos_experimentos.append(criticidad_accesos)
+    for _ in range(num_experimentos):
 
-# 1. Calcular tiempo promedio de finalización del proyecto e IC
-tiempos_experimentos = np.array(tiempos_experimentos)
-tiempo_promedio_experimentos = np.mean(tiempos_experimentos, axis=1)
-tiempo_promedio = np.mean(tiempo_promedio_experimentos)
-ic_99 = np.percentile(tiempo_promedio_experimentos, [0.5, 99.5])
+        tiempos_experimento, criticidad_accesos = simular_experimento(num_corridas)
+        tiempos_experimentos.append(tiempos_experimento)
+        criticidad_accesos_experimentos.append(criticidad_accesos)
+        tiempo_proyecto.append(np.mean(tiempos_experimentos))
+ 
+    return tiempos_experimentos, tiempo_proyecto, criticidad_accesos_experimentos
 
-print("Tiempo promedio de finalización del proyecto:", tiempo_promedio)
-print("Intervalo de confianza al 99%:", ic_99)
+
+# 1. Calcular tiempo promedio de finalización del proyecto
+def calcular_tiempo_promedio(tiempos):
+    tiempo_promedio = np.mean(tiempos)
+    
+    print("Tiempo promedio de finalización del proyecto:", tiempo_promedio)
+    return tiempo_promedio
+
+# 1. Calcular el intervalo de confianza de la finalizacion del proyecto
+def calcular_ic99_exp(tiempos_experimentos):
+    tiempo_promedio = calcular_tiempo_promedio(tiempos_experimentos)
+    desvio_estandar = np.std(tiempos_experimentos)
+
+    ic_99_inf, ic_99_sup = calcular_intervalo_confianza(tiempo_promedio, 1, desvio_estandar, 2.57, len(tiempos_experimentos))
+    return ic_99_inf, ic_99_sup
 
 # 2. Calcular porcentaje de criticidad de los accesos
-total_corridas = num_experimentos * num_corridas
-criticidad_accesos_totales = {'superior': 0, 'medio': 0, 'inferior': 0}
+def calcular_criticidad_accesos(total_corridas, criticidad_accesos_experimentos):
+    
+    criticidad_accesos_totales = {'superior': 0, 'medio': 0, 'inferior': 0}
 
-for criticidad_accesos in criticidad_accesos_experimentos:
-    for key, value in criticidad_accesos.items():
-        criticidad_accesos_totales[key] += value
+    for criticidad_accesos in criticidad_accesos_experimentos:
+        for key, value in criticidad_accesos.items():
+            criticidad_accesos_totales[key] += value
 
-for key, value in criticidad_accesos_totales.items():
-    print("Porcentaje de criticidad para acceso", key, ":", value / total_corridas * 100)
+    for key, value in criticidad_accesos_totales.items():
+        print("Porcentaje de criticidad para acceso", key, ":", value / total_corridas * 100)
 
-# 3. Graficar histograma de distribución del tiempo de realización del proyecto
-plt.figure(figsize=(10, 6))
-plt.hist(tiempos_experimentos.flatten(), bins=30, alpha=0.7, color='blue', edgecolor='black')
-plt.title('Distribución del tiempo de realización del proyecto')
-plt.xlabel('Tiempo de finalización del proyecto')
-plt.ylabel('Frecuencia')
-plt.grid(True)
-plt.show()
+# 3. Histograma de distribución del tiempo de realización del proyecto
+def graficar_histogramas(tiempo_proyecto, tiempos_experimentos):
+    fig, axs = plt.subplots(1, 2, figsize=(20, 6))
 
-# Graficar histograma de promedios de los 30 experimentos
-plt.figure(figsize=(10, 6))
-plt.hist(tiempo_promedio_experimentos, bins=15, alpha=0.7, color='green', edgecolor='black')
-plt.title('Distribución de promedios de los 30 experimentos')
-plt.xlabel('Promedio de tiempo de finalización del proyecto')
-plt.ylabel('Frecuencia')
-plt.grid(True)
-plt.show()
+    # Primer histograma
+    axs[0].hist(tiempo_proyecto, bins=30, alpha=0.7, color='blue', edgecolor='black')
+    axs[0].set_title('Distribucion del tiempo de realizacion del proyecto')
+    axs[0].set_xlabel('Tiempo de finalización del proyecto')
+    axs[0].set_ylabel('Frecuencia')
+    axs[0].grid(True)
+
+    # Segundo histograma
+    axs[1].hist(np.array(tiempos_experimentos).flatten(), bins=30, alpha=0.7, color='red', edgecolor='black')
+    axs[1].set_title('Distribucion de promedios de los 30 experimentos')
+    axs[1].set_xlabel('Promedio de tiempo de finalizacion del proyecto')
+    axs[1].set_ylabel('Frecuencia')
+    axs[1].grid(True)
+
+    plt.tight_layout()
+    plt.show()
